@@ -1,0 +1,54 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/argent_dev
+    username: argent
+    password: devpassword
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      idle-timeout: 300000
+      max-lifetime: 1200000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: argent
+    password: devpassword
+
+argent:
+  jwt:
+    secret: ZGV2LXNlY3JldC1kby1ub3QtdXNlLWluLXByb2R1Y3Rpb24tY2hhbmdlLXRoaXMtaW4tcmVhbC1kZXBsb3ltZW50
+    expiration: 900000
+    refresh-expiration: 604800000
+  api:
+    sandbox-mode: true
+
+logging:
+  level:
+    com.argent: DEBUG
+    org.springframework.security: DEBUG

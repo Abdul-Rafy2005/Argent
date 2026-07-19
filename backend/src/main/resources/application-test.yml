@@ -1,0 +1,39 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/argent_test
+    username: argent
+    password: devpassword
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: argent
+    password: devpassword
+
+argent:
+  jwt:
+    secret: dGVzdC1zZWNyZXQtZm9yLXRlc3Rpbmctb25seS1jaGFuZ2UtdGhpcy1pbi1wcm9kdWN0aW9u
+    expiration: 900000
+    refresh-expiration: 604800000
+  api:
+    sandbox-mode: true
+
+logging:
+  level:
+    com.argent: INFO
+    org.springframework.security: WARN

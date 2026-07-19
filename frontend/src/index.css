@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-neutral-0 text-neutral-800 font-sans antialiased;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-brand-500 text-white px-4 py-2 rounded-lg font-medium text-sm
+           hover:bg-brand-600 active:bg-brand-700 transition-colors duration-100
+           focus:outline-none focus:ring-2 focus:ring-brand-200 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply bg-neutral-100 text-neutral-700 px-4 py-2 rounded-lg font-medium text-sm
+           hover:bg-neutral-200 active:bg-neutral-300 transition-colors duration-100
+           focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent text-neutral-600 px-4 py-2 rounded-lg font-medium text-sm
+           hover:bg-neutral-50 active:bg-neutral-100 transition-colors duration-100
+           focus:outline-none focus:ring-2 focus:ring-neutral-200 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-danger {
+    @apply bg-error-500 text-white px-4 py-2 rounded-lg font-medium text-sm
+           hover:bg-error-700 active:bg-error-700 transition-colors duration-100
+           focus:outline-none focus:ring-2 focus:ring-error-500 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .input {
+    @apply w-full px-3 py-2 border border-neutral-200 rounded-lg text-sm
+           placeholder:text-neutral-400
+           focus:outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-200
+           disabled:bg-neutral-50 disabled:border-neutral-100 disabled:cursor-not-allowed;
+  }
+
+  .input-error {
+    @apply border-error-500 focus:border-error-500 focus:ring-error-500;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-neutral-700 mb-1;
+  }
+
+  .helper-text {
+    @apply text-xs text-neutral-500 mt-1;
+  }
+
+  .error-text {
+    @apply text-xs text-error-700 mt-1;
+  }
+
+  .card {
+    @apply bg-white border border-neutral-100 rounded-lg p-6;
+  }
+
+  .table-header {
+    @apply bg-neutral-50 text-neutral-500 text-xs font-medium uppercase tracking-wider;
+  }
+
+  .table-cell {
+    @apply px-4 py-3 text-sm text-neutral-600 border-b border-neutral-100;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2 py-1 rounded text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply bg-success-50 text-success-700;
+  }
+
+  .badge-warning {
+    @apply bg-warning-50 text-warning-700;
+  }
+
+  .badge-error {
+    @apply bg-error-50 text-error-700;
+  }
+
+  .badge-info {
+    @apply bg-info-50 text-info-700;
+  }
+
+  .badge-neutral {
+    @apply bg-neutral-100 text-neutral-600;
+  }
+}

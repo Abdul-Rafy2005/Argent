@@ -1,6 +1,5 @@
 HELP.md
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
 
@@ -31,3 +30,20 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Gradle ###
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+### Environment ###
+.env
+.env.local
+.env.*.local
+
+### Docker ###
+docker-compose.override.yml
+
+### Logs ###
+*.log
+logs/
