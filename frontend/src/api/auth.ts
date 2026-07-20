@@ -13,12 +13,18 @@ export interface RegisterRequest {
   organizationName: string
 }
 
+export interface UserInfo {
+  id: string
+  email: string
+  name: string
+  role: string
+  organizationId: string
+}
+
 export interface AuthResponse {
   accessToken: string
   refreshToken: string
-  userId: string
-  organizationId: string
-  role: string
+  user: UserInfo
 }
 
 export const authApi = {
@@ -30,4 +36,6 @@ export const authApi = {
 
   refresh: (refreshToken: string) =>
     apiClient.post<ApiResponse<AuthResponse>>('/auth/refresh', { refreshToken }),
+
+  getMe: () => apiClient.get<ApiResponse<UserInfo>>('/auth/me'),
 }

@@ -30,8 +30,9 @@ export default function Login() {
   const onSubmit = async (data: LoginFormValues) => {
     try {
       const response = await authApi.login(data)
-      const { accessToken, refreshToken } = response.data.data
+      const { accessToken, refreshToken, user } = response.data.data
       setTokens(accessToken, refreshToken)
+      useAuthStore.getState().setUser(user as any)
       toast({ title: 'Welcome back!', type: 'success' })
       navigate('/')
     } catch (error: any) {

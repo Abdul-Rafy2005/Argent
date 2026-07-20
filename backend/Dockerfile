@@ -1,4 +1,4 @@
-FROM eclipse-temurin:21-jdk-alpine AS build
+FROM eclipse-temurin:21-jdk-jammy AS build
 WORKDIR /workspace/app
 
 # Copy gradle files first to cache dependencies
@@ -20,11 +20,11 @@ COPY src src
 RUN ./gradlew bootJar -x test --no-daemon
 
 # Create a lightweight runtime image
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
-# Add a non-root user for security
-RUN addgroup -S spring && adduser -S spring -G spring
+# Add a non-root user for security (Ubuntu/Debian syntax)
+RUN addgroup --system spring && adduser --system --ingroup spring spring
 USER spring:spring
 
 # Copy the built jar from the build stage

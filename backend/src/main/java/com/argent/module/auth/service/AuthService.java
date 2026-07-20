@@ -148,6 +148,18 @@ public class AuthService {
         );
     }
 
+    public AuthResponse.UserInfo getMe(UUID userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User", userId.toString()));
+        return new AuthResponse.UserInfo(
+                user.getId(),
+                user.getEmail(),
+                user.getName(),
+                user.getRole(),
+                user.getOrganization().getId()
+        );
+    }
+
     @Transactional
     public ApiKeyResponse generateApiKey(UUID organizationId, CreateApiKeyRequest request) {
         String rawKey = generateRawApiKey();

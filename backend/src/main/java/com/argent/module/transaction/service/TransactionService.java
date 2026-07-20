@@ -179,7 +179,7 @@ public class TransactionService {
     public Page<TransactionResponse> listByDateRange(UUID orgId, LocalDateTime start,
                                                       LocalDateTime end, int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
-        return transactionRepository.findByOrganizationIdAndDateRange(orgId, start, end, pageable).map(TransactionResponse::fromEntity);
+        return transactionRepository.findByOrganizationIdAndEnvironmentAndDateRange(orgId, null, start, end, pageable).map(TransactionResponse::fromEntity);
     }
 
     @Transactional(readOnly = true)

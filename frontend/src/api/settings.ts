@@ -2,7 +2,8 @@ import apiClient from './client'
 import type { ApiResponse, ApiKey, Organization, Balance } from '@/types'
 
 export const organizationApi = {
-  get: () => apiClient.get<ApiResponse<Organization>>(`/organizations`),
+  get: () => apiClient.get<ApiResponse<Organization[]>>(`/organizations`),
+  getById: (id: string) => apiClient.get<ApiResponse<Organization>>(`/organizations/${id}`),
 }
 
 export const apiKeyApi = {

@@ -6,12 +6,14 @@ export default function Header() {
   const { user, organization, setOrganization, logout } = useAuthStore()
 
   useEffect(() => {
-    if (!organization) {
-      organizationApi.get().then((res) => {
-        setOrganization(res.data.data)
-      })
+    if (!organization && user?.organizationId) {
+      organizationApi.getById(user.organizationId)
+        .then((res) => {
+          setOrganization(res.data.data)
+        })
+        .catch(console.error)
     }
-  }, [organization, setOrganization])
+  }, [organization, setOrganization, user?.organizationId])
 
   return (
     <header className="bg-white border-b border-neutral-100 h-16 px-8 flex items-center justify-between sticky top-0 z-10">

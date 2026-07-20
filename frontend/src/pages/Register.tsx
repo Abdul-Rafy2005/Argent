@@ -32,9 +32,10 @@ export default function Register() {
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       const response = await authApi.register(data)
-      const { accessToken, refreshToken } = response.data.data
+      const { accessToken, refreshToken, user } = response.data.data
       setTokens(accessToken, refreshToken)
-      toast({ title: 'Account created successfully', type: 'success' })
+      useAuthStore.getState().setUser(user as any)
+      toast({ title: 'Account created successfully!', type: 'success' })
       navigate('/')
     } catch (error: any) {
       toast({

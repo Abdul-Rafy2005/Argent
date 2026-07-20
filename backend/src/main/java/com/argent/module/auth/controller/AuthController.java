@@ -34,4 +34,10 @@ public class AuthController {
     public ApiResponse<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request) {
         return ApiResponse.success(authService.refresh(request));
     }
+
+    @GetMapping("/me")
+    public ApiResponse<AuthResponse.UserInfo> getMe(Authentication authentication) {
+        CurrentUserPrincipal principal = (CurrentUserPrincipal) authentication.getPrincipal();
+        return ApiResponse.success(authService.getMe(principal.getId()));
+    }
 }
