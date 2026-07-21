@@ -1,5 +1,6 @@
 package com.argent.module.transaction;
 
+import com.argent.common.exception.InsufficientBalanceException;
 import com.argent.common.exception.NotFoundException;
 import com.argent.common.exception.ValidationException;
 import com.argent.common.exception.WalletClosedException;
@@ -16,14 +17,17 @@ import com.argent.module.wallet.entity.Wallet;
 import com.argent.module.wallet.repository.AccountRepository;
 import com.argent.module.wallet.repository.WalletRepository;
 import com.argent.module.wallet.service.BalanceService;
+import com.argent.module.wallet.service.WalletService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -46,30 +50,45 @@ class WithdrawalEngineTest {
     private AuditLogRepository auditLogRepository;
     @Mock
     private BalanceService balanceService;
+    @Mock
+    private WalletService walletService;
 
     @InjectMocks
     private WithdrawalEngine withdrawalEngine;
 
     private Organization org;
-    private Wallet wallet;
-    private Account account;
-    private Balance balance;
+    private Wallet customerWallet;
+    private Account customerAccount;
+    private Balance customerBalance;
+    private Wallet platformWallet;
+    private Account platformAccount;
 
     @BeforeEach
     void setUp() {
         org = Organization.builder().id(UUID.randomUUID()).build();
-        account = Account.builder().id(UUID.randomUUID()).organization(org).build();
-        wallet = Wallet.builder()
+        customerAccount = Account.builder().id(UUID.randomUUID()).organization(org).build();
+        customerWallet = Wallet.builder()
                 .id(UUID.randomUUID())
                 .organization(org)
-                .accountId(account.getId())
+                .accountId(customerAccount.getId())
                 .status(Wallet.Status.ACTIVE)
+                .environment(Wallet.Environment.SANDBOX)
                 .build();
-        balance = Balance.builder()
+        customerBalance = Balance.builder()
                 .id(UUID.randomUUID())
-                .accountId(account.getId())
+                .accountId(customerAccount.getId())
                 .current(new BigDecimal("100.00"))
                 .available(new BigDecimal("100.00"))
+                .build();
+
+        platformAccount = Account.builder().id(UUID.randomUUID()).organization(org).build();
+        platformWallet = Wallet.builder()
+                .id(UUID.randomUUID())
+                .organization(org)
+                .accountId(platformAccount.getId())
+                .type(Wallet.Type.PLATFORM)
+                .status(Wallet.Status.ACTIVE)
+                .environment(Wallet.Environment.SANDBOX)
                 .build();
     }
 
@@ -110,13 +129,13 @@ class WithdrawalEngineTest {
 
     @Test
     void should_throw_when_wallet_frozen() {
-        wallet.setStatus(Wallet.Status.FROZEN);
-        when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
+        customerWallet.setStatus(Wallet.Status.FROZEN);
+        when(walletRepository.findById(customerWallet.getId())).thenReturn(Optional.of(customerWallet));
 
         Transaction tx = Transaction.builder()
                 .organization(org)
                 .type(Transaction.Type.WITHDRAWAL)
-                .sourceWalletId(wallet.getId())
+                .sourceWalletId(customerWallet.getId())
                 .amount(new BigDecimal("50.00"))
                 .build();
 
@@ -126,13 +145,13 @@ class WithdrawalEngineTest {
 
     @Test
     void should_throw_when_wallet_closed() {
-        wallet.setStatus(Wallet.Status.CLOSED);
-        when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
+        customerWallet.setStatus(Wallet.Status.CLOSED);
+        when(walletRepository.findById(customerWallet.getId())).thenReturn(Optional.of(customerWallet));
 
         Transaction tx = Transaction.builder()
                 .organization(org)
                 .type(Transaction.Type.WITHDRAWAL)
-                .sourceWalletId(wallet.getId())
+                .sourceWalletId(customerWallet.getId())
                 .amount(new BigDecimal("50.00"))
                 .build();
 
@@ -141,19 +160,22 @@ class WithdrawalEngineTest {
     }
 
     @Test
-    void should_execute_withdrawal_successfully() {
-        when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
-        when(accountRepository.findById(account.getId())).thenReturn(Optional.of(account));
-        when(balanceService.getBalance(account.getId())).thenReturn(balance);
+    void should_execute_withdrawal_with_correct_ledger_entries() {
+        when(walletRepository.findById(customerWallet.getId())).thenReturn(Optional.of(customerWallet));
+        when(accountRepository.findById(customerAccount.getId())).thenReturn(Optional.of(customerAccount));
+        when(balanceService.getBalance(customerAccount.getId())).thenReturn(customerBalance);
+        when(walletService.getOrCreatePlatformWallet(org, Wallet.Environment.SANDBOX)).thenReturn(platformWallet);
+        when(accountRepository.findById(platformAccount.getId())).thenReturn(Optional.of(platformAccount));
         when(ledgerEntryService.createBalancedEntries(any(), any(), any(), any(), any(), anyString()))
-                .thenReturn(java.util.List.of());
+                .thenReturn(List.of());
+        when(ledgerEntryService.recalculateBalance(customerAccount.getId())).thenReturn(new BigDecimal("50.00"));
         when(transactionRepository.save(any(Transaction.class))).thenAnswer(inv -> inv.getArgument(0));
         when(auditLogRepository.save(any())).thenReturn(null);
 
         Transaction tx = Transaction.builder()
                 .organization(org)
                 .type(Transaction.Type.WITHDRAWAL)
-                .sourceWalletId(wallet.getId())
+                .sourceWalletId(customerWallet.getId())
                 .amount(new BigDecimal("50.00"))
                 .description("Test withdrawal")
                 .build();
@@ -162,7 +184,19 @@ class WithdrawalEngineTest {
 
         assertThat(result.getStatus()).isEqualTo(Transaction.Status.COMPLETED);
         assertThat(result.getCompletedAt()).isNotNull();
-        verify(ledgerEntryService).createBalancedEntries(any(), any(), any(), any(), any(), anyString());
+
+        ArgumentCaptor<UUID> captor = ArgumentCaptor.forClass(UUID.class);
+        verify(ledgerEntryService).createBalancedEntries(
+                any(), captor.capture(), captor.capture(), any(), any(), anyString());
+
+        List<UUID> accountIds = captor.getAllValues();
+        UUID debitAccountId = accountIds.get(0);
+        UUID creditAccountId = accountIds.get(1);
+
+        assertThat(debitAccountId).isEqualTo(customerAccount.getId());
+        assertThat(creditAccountId).isEqualTo(platformAccount.getId());
+        assertThat(debitAccountId).isNotEqualTo(creditAccountId);
+
         verify(auditLogRepository).save(any());
     }
 
@@ -170,24 +204,24 @@ class WithdrawalEngineTest {
     void should_throw_when_insufficient_balance() {
         Balance lowBalance = Balance.builder()
                 .id(UUID.randomUUID())
-                .accountId(account.getId())
+                .accountId(customerAccount.getId())
                 .current(new BigDecimal("10.00"))
                 .available(new BigDecimal("10.00"))
                 .build();
 
-        when(walletRepository.findById(wallet.getId())).thenReturn(Optional.of(wallet));
-        when(accountRepository.findById(account.getId())).thenReturn(Optional.of(account));
-        when(balanceService.getBalance(account.getId())).thenReturn(lowBalance);
+        when(walletRepository.findById(customerWallet.getId())).thenReturn(Optional.of(customerWallet));
+        when(accountRepository.findById(customerAccount.getId())).thenReturn(Optional.of(customerAccount));
+        when(balanceService.getBalance(customerAccount.getId())).thenReturn(lowBalance);
 
         Transaction tx = Transaction.builder()
                 .organization(org)
                 .type(Transaction.Type.WITHDRAWAL)
-                .sourceWalletId(wallet.getId())
+                .sourceWalletId(customerWallet.getId())
                 .amount(new BigDecimal("50.00"))
                 .description("Overdraw attempt")
                 .build();
 
         assertThatThrownBy(() -> withdrawalEngine.execute(tx))
-                .isInstanceOf(com.argent.common.exception.InsufficientBalanceException.class);
+                .isInstanceOf(InsufficientBalanceException.class);
     }
 }

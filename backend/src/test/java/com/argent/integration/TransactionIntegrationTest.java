@@ -340,4 +340,150 @@ class TransactionIntegrationTest {
                         .content(objectMapper.writeValueAsString(transferRequest)))
                 .andExpect(status().isBadRequest());
     }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void should_create_correct_ledger_entries_for_deposit() throws Exception {
+        AuthResponse auth = registerAndGetAuth("ledger-deposit@example.com", "LedgerDeposit Org");
+        WalletResponse wallet = createWallet(auth, "LedgerDeposit Wallet");
+
+        DepositRequest depositRequest = new DepositRequest(
+                wallet.id().toString(),
+                new BigDecimal("150.00"),
+                null,
+                "Ledger test deposit",
+                "ledger-deposit-001",
+                null);
+
+        MvcResult depositResult = mockMvc.perform(post("/api/v1/transactions/deposit")
+                        .header("Authorization", "Bearer " + auth.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(depositRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        TransactionResponse txResponse = extractTransactionResponse(depositResult);
+        UUID transactionId = txResponse.id();
+
+        MvcResult ledgerResult = mockMvc.perform(get("/api/v1/ledger/entries")
+                        .header("Authorization", "Bearer " + auth.accessToken())
+                        .param("transactionId", transactionId.toString()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String ledgerBody = ledgerResult.getResponse().getContentAsString();
+        ApiResponse<?> ledgerApiResponse = objectMapper.readValue(ledgerBody,
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Object.class));
+        Map<String, Object> ledgerData = (Map<String, Object>) ledgerApiResponse.getData();
+        java.util.List<Map<String, Object>> ledgerContent = (java.util.List<Map<String, Object>>) ledgerData.get("content");
+
+        assertThat(ledgerContent).hasSize(2);
+
+        Map<String, Object> debitEntry = ledgerContent.stream()
+                .filter(e -> "DEBIT".equals(e.get("type")))
+                .findFirst().orElseThrow();
+        Map<String, Object> creditEntry = ledgerContent.stream()
+                .filter(e -> "CREDIT".equals(e.get("type")))
+                .findFirst().orElseThrow();
+
+        String debitAccountId = (String) debitEntry.get("accountId");
+        String creditAccountId = (String) creditEntry.get("accountId");
+        assertThat(debitAccountId).isNotEqualTo(creditAccountId);
+
+        BigDecimal debitAmount = new BigDecimal(debitEntry.get("amount").toString());
+        BigDecimal creditAmount = new BigDecimal(creditEntry.get("amount").toString());
+        assertThat(debitAmount).isEqualByComparingTo(new BigDecimal("150.00"));
+        assertThat(creditAmount).isEqualByComparingTo(new BigDecimal("150.00"));
+
+        MvcResult balanceResult = mockMvc.perform(get("/api/v1/balances/" + wallet.id())
+                        .header("Authorization", "Bearer " + auth.accessToken()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String balanceBody = balanceResult.getResponse().getContentAsString();
+        assertThat(balanceBody).contains("\"current\":150.0000");
+
+        BigDecimal creditBalanceAfter = new BigDecimal(creditEntry.get("balanceAfter").toString());
+        assertThat(creditBalanceAfter).isEqualByComparingTo(new BigDecimal("150.00"));
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    void should_create_correct_ledger_entries_for_withdrawal() throws Exception {
+        AuthResponse auth = registerAndGetAuth("ledger-withdrawal@example.com", "LedgerWithdrawal Org");
+        WalletResponse wallet = createWallet(auth, "LedgerWithdrawal Wallet");
+
+        DepositRequest depositRequest = new DepositRequest(
+                wallet.id().toString(),
+                new BigDecimal("200.00"),
+                null,
+                "Initial deposit",
+                "ledger-withdrawal-deposit-001",
+                null);
+
+        mockMvc.perform(post("/api/v1/transactions/deposit")
+                        .header("Authorization", "Bearer " + auth.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(depositRequest)))
+                .andExpect(status().isCreated());
+
+        WithdrawalRequest withdrawalRequest = new WithdrawalRequest(
+                wallet.id().toString(),
+                new BigDecimal("75.00"),
+                null,
+                "Ledger test withdrawal",
+                "ledger-withdrawal-001",
+                null);
+
+        MvcResult withdrawalResult = mockMvc.perform(post("/api/v1/transactions/withdraw")
+                        .header("Authorization", "Bearer " + auth.accessToken())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(withdrawalRequest)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        TransactionResponse txResponse = extractTransactionResponse(withdrawalResult);
+        UUID transactionId = txResponse.id();
+
+        MvcResult ledgerResult = mockMvc.perform(get("/api/v1/ledger/entries")
+                        .header("Authorization", "Bearer " + auth.accessToken())
+                        .param("transactionId", transactionId.toString()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String ledgerBody = ledgerResult.getResponse().getContentAsString();
+        ApiResponse<?> ledgerApiResponse = objectMapper.readValue(ledgerBody,
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, Object.class));
+        Map<String, Object> ledgerData = (Map<String, Object>) ledgerApiResponse.getData();
+        java.util.List<Map<String, Object>> ledgerContent = (java.util.List<Map<String, Object>>) ledgerData.get("content");
+
+        assertThat(ledgerContent).hasSize(2);
+
+        Map<String, Object> debitEntry = ledgerContent.stream()
+                .filter(e -> "DEBIT".equals(e.get("type")))
+                .findFirst().orElseThrow();
+        Map<String, Object> creditEntry = ledgerContent.stream()
+                .filter(e -> "CREDIT".equals(e.get("type")))
+                .findFirst().orElseThrow();
+
+        String debitAccountId = (String) debitEntry.get("accountId");
+        String creditAccountId = (String) creditEntry.get("accountId");
+        assertThat(debitAccountId).isNotEqualTo(creditAccountId);
+
+        BigDecimal debitAmount = new BigDecimal(debitEntry.get("amount").toString());
+        BigDecimal creditAmount = new BigDecimal(creditEntry.get("amount").toString());
+        assertThat(debitAmount).isEqualByComparingTo(new BigDecimal("75.00"));
+        assertThat(creditAmount).isEqualByComparingTo(new BigDecimal("75.00"));
+
+        MvcResult balanceResult = mockMvc.perform(get("/api/v1/balances/" + wallet.id())
+                        .header("Authorization", "Bearer " + auth.accessToken()))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        String balanceBody = balanceResult.getResponse().getContentAsString();
+        assertThat(balanceBody).contains("\"current\":125.0000");
+
+        BigDecimal debitBalanceAfter = new BigDecimal(debitEntry.get("balanceAfter").toString());
+        assertThat(debitBalanceAfter).isEqualByComparingTo(new BigDecimal("125.00"));
+    }
 }

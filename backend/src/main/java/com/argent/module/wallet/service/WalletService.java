@@ -265,6 +265,29 @@ public class WalletService {
         }
     }
 
+    @Transactional
+    public Wallet getOrCreatePlatformWallet(Organization organization, Wallet.Environment environment) {
+        return walletRepository.findByOrganizationIdAndTypeAndEnvironment(
+                        organization.getId(), Wallet.Type.PLATFORM, environment)
+                .orElseGet(() -> {
+                    Account platformAccount = accountService.createAccount(
+                            organization, Account.Type.ASSET,
+                            "platform-" + organization.getId(),
+                            Account.Environment.valueOf(environment.name()));
+
+                    balanceService.initializeBalance(platformAccount.getId());
+
+                    Wallet platformWallet = Wallet.builder()
+                            .organization(organization)
+                            .accountId(platformAccount.getId())
+                            .label("Platform - " + organization.getId())
+                            .type(Wallet.Type.PLATFORM)
+                            .environment(environment)
+                            .build();
+                    return walletRepository.save(platformWallet);
+                });
+    }
+
     private WalletResponse toResponse(Wallet wallet, Balance balance) {
         return new WalletResponse(
                 wallet.getId(),

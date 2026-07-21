@@ -12,7 +12,7 @@ import com.argent.module.wallet.entity.Account;
 import com.argent.module.wallet.entity.Wallet;
 import com.argent.module.wallet.repository.AccountRepository;
 import com.argent.module.wallet.repository.WalletRepository;
-import com.argent.module.wallet.service.BalanceService;
+import com.argent.module.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,7 +31,7 @@ public class DepositEngine implements TransactionEngine {
     private final LedgerEntryService ledgerEntryService;
     private final TransactionRepository transactionRepository;
     private final AuditLogRepository auditLogRepository;
-    private final BalanceService balanceService;
+    private final WalletService walletService;
 
     @Override
     public Transaction.Type getSupportedType() {
@@ -61,19 +61,22 @@ public class DepositEngine implements TransactionEngine {
             throw new WalletClosedException(transaction.getDestinationWalletId().toString());
         }
 
-        Account account = accountRepository.findById(wallet.getAccountId())
+        Account customerAccount = accountRepository.findById(wallet.getAccountId())
                 .orElseThrow(() -> new NotFoundException("Account", wallet.getAccountId().toString()));
+
+        Wallet platformWallet = walletService.getOrCreatePlatformWallet(
+                transaction.getOrganization(), wallet.getEnvironment());
+        Account platformAccount = accountRepository.findById(platformWallet.getAccountId())
+                .orElseThrow(() -> new NotFoundException("Account", platformWallet.getAccountId().toString()));
 
         ledgerEntryService.createBalancedEntries(
                 transaction.getId(),
-                account.getId(),
-                account.getId(),
+                platformAccount.getId(),
+                customerAccount.getId(),
                 transaction.getAmount(),
                 transaction.getOrganization().getId(),
                 "Deposit: " + transaction.getDescription()
         );
-
-        balanceService.credit(account.getId(), transaction.getAmount());
 
         transaction.markCompleted();
         transactionRepository.save(transaction);
@@ -86,7 +89,7 @@ public class DepositEngine implements TransactionEngine {
                 .newState(Map.of(
                         "walletId", transaction.getDestinationWalletId(),
                         "amount", transaction.getAmount(),
-                        "balanceAfter", balanceService.getBalance(account.getId()).getCurrent()
+                        "balanceAfter", ledgerEntryService.recalculateBalance(customerAccount.getId())
                 ))
                 .build());
 

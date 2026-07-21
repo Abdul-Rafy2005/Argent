@@ -24,9 +24,9 @@ Argent is a developer-first financial infrastructure API that enables startups t
 
 ## Current Phase
 
-**Phase 7 — COMPLETE (Audit + Reporting)**
+**All Phases COMPLETE (V1 MVP)**
 
-Audit + Reporting is operational: AuditService with JPQL filter queries, ReportingService with daily volume/wallet growth/transaction reports, StatementExportService for CSV export. AuditController exposes 2 endpoints (GET /audit-logs, GET /audit-logs/{id}), ReportingController exposes 4 endpoints (GET /reports/daily-volume, GET /reports/wallet-growth, GET /reports/transactions, GET /statements). Org isolation enforced. All 187 tests passing. Ready for Phase 8 (Webhook Engine).
+DepositEngine and WithdrawalEngine now use a lazy-created platform wallet per organization+environment as the counterparty for double-entry bookkeeping. Ledger entries for deposits and withdrawals correctly reference two different accounts. All 190 tests passing.
 
 ---
 

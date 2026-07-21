@@ -56,7 +56,7 @@ class AuditServiceTest {
     void should_get_audit_log_by_id() {
         when(auditLogRepository.findById(auditLog.getId())).thenReturn(Optional.of(auditLog));
 
-        AuditLogResponse response = auditService.getAuditLog(auditLog.getId(), org.getId());
+        AuditLogResponse response = auditService.getAuditLog(auditLog.getId(), org.getId(), null);
 
         assertThat(response).isNotNull();
         assertThat(response.entityType()).isEqualTo("WALLET");
@@ -67,7 +67,7 @@ class AuditServiceTest {
     void should_throw_when_audit_log_not_found() {
         when(auditLogRepository.findById(any())).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> auditService.getAuditLog(UUID.randomUUID(), org.getId()))
+        assertThatThrownBy(() -> auditService.getAuditLog(UUID.randomUUID(), org.getId(), null))
                 .isInstanceOf(NotFoundException.class);
     }
 
@@ -85,7 +85,7 @@ class AuditServiceTest {
 
         when(auditLogRepository.findById(otherLog.getId())).thenReturn(Optional.of(otherLog));
 
-        assertThatThrownBy(() -> auditService.getAuditLog(otherLog.getId(), org.getId()))
+        assertThatThrownBy(() -> auditService.getAuditLog(otherLog.getId(), org.getId(), null))
                 .isInstanceOf(ForbiddenException.class);
     }
 
@@ -93,12 +93,12 @@ class AuditServiceTest {
     void should_query_audit_logs_with_filters() {
         Page<AuditLog> page = new PageImpl<>(List.of(auditLog));
         when(auditLogRepository.findByFilters(
-                eq(org.getId()), eq("WALLET"), eq("CREATED"), isNull(),
+                eq(org.getId()), isNull(), eq("WALLET"), eq("CREATED"), isNull(),
                 any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
                 .thenReturn(page);
 
         Page<AuditLogResponse> result = auditService.queryAuditLogs(
-                org.getId(), "WALLET", "CREATED", null, null, null, 0, 20);
+                org.getId(), null, "WALLET", "CREATED", null, null, null, 0, 20);
 
         assertThat(result.getContent()).hasSize(1);
         assertThat(result.getContent().get(0).entityType()).isEqualTo("WALLET");
@@ -108,12 +108,12 @@ class AuditServiceTest {
     void should_return_empty_for_no_matches() {
         Page<AuditLog> emptyPage = new PageImpl<>(List.of());
         when(auditLogRepository.findByFilters(
-                eq(org.getId()), any(), any(), isNull(),
+                eq(org.getId()), isNull(), any(), any(), isNull(),
                 any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
                 .thenReturn(emptyPage);
 
         Page<AuditLogResponse> result = auditService.queryAuditLogs(
-                org.getId(), "NONEXISTENT", null, null, null, null, 0, 20);
+                org.getId(), null, "NONEXISTENT", null, null, null, null, 0, 20);
 
         assertThat(result.getContent()).isEmpty();
     }

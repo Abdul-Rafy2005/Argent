@@ -12,6 +12,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -58,11 +59,11 @@ class StatementExportTest {
                 .build();
 
         Page<Transaction> page = new PageImpl<>(List.of(tx1, tx2));
-        when(transactionRepository.findByOrganizationIdAndDateRange(
-                eq(orgId), any(LocalDateTime.class), any(LocalDateTime.class), any()))
+        when(transactionRepository.findByOrganizationIdAndEnvironmentAndDateRange(
+                eq(orgId), isNull(), any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
                 .thenReturn(page);
 
-        String csv = statementExportService.exportCsv(orgId, LocalDate.of(2026, 7, 19), LocalDate.of(2026, 7, 19));
+        String csv = statementExportService.exportCsv(orgId, null, LocalDate.of(2026, 7, 19), LocalDate.of(2026, 7, 19));
 
         assertThat(csv).startsWith("Date,Type,Description,Amount,Status\n");
         assertThat(csv).contains("DEPOSIT");
@@ -76,11 +77,11 @@ class StatementExportTest {
     @Test
     void should_return_only_header_for_empty_data() {
         Page<Transaction> emptyPage = new PageImpl<>(List.of());
-        when(transactionRepository.findByOrganizationIdAndDateRange(
-                eq(orgId), any(LocalDateTime.class), any(LocalDateTime.class), any()))
+        when(transactionRepository.findByOrganizationIdAndEnvironmentAndDateRange(
+                eq(orgId), isNull(), any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
                 .thenReturn(emptyPage);
 
-        String csv = statementExportService.exportCsv(orgId, LocalDate.now(), LocalDate.now());
+        String csv = statementExportService.exportCsv(orgId, null, LocalDate.now(), LocalDate.now());
 
         assertThat(csv).startsWith("Date,Type,Description,Amount,Status\n");
         assertThat(csv.split("\n")).hasSize(1);
@@ -98,11 +99,11 @@ class StatementExportTest {
                 .build();
 
         Page<Transaction> page = new PageImpl<>(List.of(tx));
-        when(transactionRepository.findByOrganizationIdAndDateRange(
-                eq(orgId), any(LocalDateTime.class), any(LocalDateTime.class), any()))
+        when(transactionRepository.findByOrganizationIdAndEnvironmentAndDateRange(
+                eq(orgId), isNull(), any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
                 .thenReturn(page);
 
-        String csv = statementExportService.exportCsv(orgId, LocalDate.now(), LocalDate.now());
+        String csv = statementExportService.exportCsv(orgId, null, LocalDate.now(), LocalDate.now());
 
         assertThat(csv).contains("\"Deposit, with comma\"");
     }

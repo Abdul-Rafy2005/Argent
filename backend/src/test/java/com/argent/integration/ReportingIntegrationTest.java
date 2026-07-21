@@ -224,8 +224,10 @@ class ReportingIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(sandKeyReq)))
                 .andExpect(status().isCreated()).andReturn();
-        com.argent.module.auth.dto.ApiKeyResponse sandKey = objectMapper.readValue(sandKeyRes.getResponse().getContentAsString(),
-                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, com.argent.module.auth.dto.ApiKeyResponse.class)).getData();
+        @SuppressWarnings("unchecked")
+        ApiResponse<com.argent.module.auth.dto.ApiKeyResponse> sandKeyResp = objectMapper.readValue(sandKeyRes.getResponse().getContentAsString(),
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, com.argent.module.auth.dto.ApiKeyResponse.class));
+        com.argent.module.auth.dto.ApiKeyResponse sandKey = sandKeyResp.getData();
 
         // Create Production API Key
         com.argent.module.auth.dto.CreateApiKeyRequest prodKeyReq = new com.argent.module.auth.dto.CreateApiKeyRequest("ProdKey", com.argent.module.auth.entity.ApiKey.Environment.PRODUCTION);
@@ -234,8 +236,10 @@ class ReportingIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(prodKeyReq)))
                 .andExpect(status().isCreated()).andReturn();
-        com.argent.module.auth.dto.ApiKeyResponse prodKey = objectMapper.readValue(prodKeyRes.getResponse().getContentAsString(),
-                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, com.argent.module.auth.dto.ApiKeyResponse.class)).getData();
+        @SuppressWarnings("unchecked")
+        ApiResponse<com.argent.module.auth.dto.ApiKeyResponse> prodKeyResp = objectMapper.readValue(prodKeyRes.getResponse().getContentAsString(),
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, com.argent.module.auth.dto.ApiKeyResponse.class));
+        com.argent.module.auth.dto.ApiKeyResponse prodKey = prodKeyResp.getData();
 
         // Create wallets using API keys to set their environment automatically
         CreateWalletRequest walletRequest1 = new CreateWalletRequest("Sand Wallet", Wallet.Type.CUSTOMER, null);
@@ -244,8 +248,10 @@ class ReportingIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(walletRequest1)))
                 .andExpect(status().isCreated()).andReturn();
-        WalletResponse sandWallet = objectMapper.readValue(wallet1Res.getResponse().getContentAsString(),
-                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, WalletResponse.class)).getData();
+        @SuppressWarnings("unchecked")
+        ApiResponse<WalletResponse> sandWalletResp = objectMapper.readValue(wallet1Res.getResponse().getContentAsString(),
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, WalletResponse.class));
+        WalletResponse sandWallet = sandWalletResp.getData();
 
         CreateWalletRequest walletRequest2 = new CreateWalletRequest("Prod Wallet", Wallet.Type.CUSTOMER, null);
         MvcResult wallet2Res = mockMvc.perform(post("/api/v1/wallets")
@@ -253,8 +259,10 @@ class ReportingIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(walletRequest2)))
                 .andExpect(status().isCreated()).andReturn();
-        WalletResponse prodWallet = objectMapper.readValue(wallet2Res.getResponse().getContentAsString(),
-                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, WalletResponse.class)).getData();
+        @SuppressWarnings("unchecked")
+        ApiResponse<WalletResponse> prodWalletResp = objectMapper.readValue(wallet2Res.getResponse().getContentAsString(),
+                objectMapper.getTypeFactory().constructParametricType(ApiResponse.class, WalletResponse.class));
+        WalletResponse prodWallet = prodWalletResp.getData();
 
         // Deposit into Sandbox Wallet
         DepositRequest depositSand = new DepositRequest(sandWallet.id().toString(), new BigDecimal("100.00"), null, "Sand Dep", "sand-dep", null);

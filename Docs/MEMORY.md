@@ -54,6 +54,7 @@ This file is a running log so that context is not lost between sessions or chats
 | 2026-07-19 | Phase 6 (Balance Engine) | BalanceHistory entity, BalanceHistoryRepository, BalanceResponse/BalanceHistoryResponse DTOs, enhanced BalanceService with Redis caching and cache invalidation, BalanceController (GET /balances/{walletId}, GET /balances/{walletId}/history), V18 migration (balance_history table), cache invalidation integrated with existing credit/debit operations, `available` balance now computed as `current - pending - reserved` on every write | +8 unit tests (BalanceServiceTest) + 5 integration tests (BalanceIntegrationTest) | ALL 168 PASS | Phase 6 complete |
 | 2026-07-19 | Phase 7 (Audit + Reporting) | AuditService, ReportingService, StatementExportService, AuditController (GET /audit-logs, GET /audit-logs/{id}), ReportingController (GET /reports/daily-volume, GET /reports/wallet-growth, GET /reports/transactions, GET /statements), 5 DTOs (AuditLogResponse, DailyVolumeResponse, WalletGrowthResponse, TransactionReportResponse, StatementLineResponse), AuditLogRepository enhanced with findByFilters() JPQL, WalletRepository enhanced with countByOrganizationIdAndCreatedAtBetween(), AuditIntegrationTest, ReportingIntegrationTest | +12 unit tests (5 AuditServiceTest + 4 ReportingServiceTest + 3 StatementExportTest) + 9 integration tests (4 AuditIntegrationTest + 5 ReportingIntegrationTest) | ALL 187 PASS | Phase 7 complete |
 | 2026-07-19 | Phase 8 (Frontend Dashboard) | Frontend Dashboard. Built the dashboard UI (Login, Dashboard, Wallets, Transactions, Ledger, Audit Logs, Reports, Settings). Handled routing, authentication flow (Zustand), API fetching (TanStack Query). Implemented vitest+jsdom integration tests. Component Tests: 7 (Login, WalletDetail, Wallets, Transactions). Integration Tests: 2 (Flow, DepositTransfer). All passing. | 9 frontend (7 component, 2 integration) | PASS | Phase 8 criteria fully met. |
+| 2026-07-21 | Ledger entry bug fix for Deposit/Withdrawal | Introduced lazy platform wallet per org+environment. DepositEngine now debits platform account, credits customer account. WithdrawalEngine debits customer account, credits platform account. Removed separate `balanceService.credit()/debit()` calls (createBalancedEntries handles balance updates when sameAccount=false). Added `getOrCreatePlatformWallet()` to WalletService. Added `findByOrganizationIdAndTypeAndEnvironment` to WalletRepository. Updated unit tests for both engines with ArgumentCaptor assertions. Added 2 integration tests verifying ledger entry correctness. Fixed Phase 7 test compilation errors (missing environment parameter). | +2 integration tests | ALL 190 PASS | Bug fixed, 190 tests total |
 
 ---
 
@@ -72,16 +73,17 @@ This file is a running log so that context is not lost between sessions or chats
 | 2026-07-19 | Balance queries had no caching or history tracking | Medium | RESOLVED — Phase 6 added Redis caching, balance history table, cache invalidation on balance changes |
 | 2026-07-19 | `pending` and `reserved` balance fields are scaffolded but not populated | Low | `Balance.pending` and `Balance.reserved` are always ZERO — no Phase 5 engine sets them. These fields are reserved for future features (escrow, holds). `available` is now computed as `current - pending - reserved` on every write to prevent drift when these fields are eventually used. |
 | 2026-07-19 | Environment switching UI in Dashboard | Low | The frontend UI explicitly omits a global "Environment Switcher" (Sandbox vs Production) as a deliberate V1 limitation. API keys enforce environment scoping securely on the backend, but JWT-authenticated dashboard users see a unified view of all wallets/transactions across both environments by design. |
+| 2026-07-21 | DepositEngine and WithdrawalEngine used same account for both debit and credit ledger entries | High | RESOLVED — Introduced lazy platform wallet per org+environment. Deposits debit platform account, credit customer account. Withdrawals debit customer account, credit platform account. Balance table now updated by `createBalancedEntries` (not separate `balanceService.credit()/debit()` calls). |
 
 ---
 
 ## Current State
 
-- **Active Phase:** Phase 7 — COMPLETE (Audit + Reporting)
-- **Last Session:** 2026-07-19
+- **Active Phase:** Phase 8 — COMPLETE (Frontend Dashboard)
+- **Last Session:** 2026-07-21
 - **Blockers:** None
-- **Next Action:** Begin Phase 8 (Webhook Engine)
-- **Test Count:** 187 (all passing: 126 unit + 61 integration)
+- **Next Action:** None — V1 MVP complete
+- **Test Count:** 190 (all passing: 128 unit + 62 integration)
 - **Migrations:** V1-V18 (V13 ledger immutability, V14-V15 environment scoping, V16 transaction columns, V17 balance version, V18 balance history)
 
 ---

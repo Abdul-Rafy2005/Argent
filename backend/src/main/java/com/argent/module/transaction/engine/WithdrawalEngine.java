@@ -1,5 +1,6 @@
 package com.argent.module.transaction.engine;
 
+import com.argent.common.exception.InsufficientBalanceException;
 import com.argent.common.exception.NotFoundException;
 import com.argent.common.exception.WalletClosedException;
 import com.argent.common.exception.WalletFrozenException;
@@ -14,6 +15,7 @@ import com.argent.module.wallet.entity.Wallet;
 import com.argent.module.wallet.repository.AccountRepository;
 import com.argent.module.wallet.repository.WalletRepository;
 import com.argent.module.wallet.service.BalanceService;
+import com.argent.module.wallet.service.WalletService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,6 +35,7 @@ public class WithdrawalEngine implements TransactionEngine {
     private final TransactionRepository transactionRepository;
     private final AuditLogRepository auditLogRepository;
     private final BalanceService balanceService;
+    private final WalletService walletService;
 
     @Override
     public Transaction.Type getSupportedType() {
@@ -62,25 +65,28 @@ public class WithdrawalEngine implements TransactionEngine {
             throw new WalletClosedException(transaction.getSourceWalletId().toString());
         }
 
-        Account account = accountRepository.findById(wallet.getAccountId())
+        Account customerAccount = accountRepository.findById(wallet.getAccountId())
                 .orElseThrow(() -> new NotFoundException("Account", wallet.getAccountId().toString()));
 
-        Balance balance = balanceService.getBalance(account.getId());
+        Balance balance = balanceService.getBalance(customerAccount.getId());
         if (balance.getAvailable().compareTo(transaction.getAmount()) < 0) {
-            throw new com.argent.common.exception.InsufficientBalanceException(
+            throw new InsufficientBalanceException(
                     wallet.getId().toString(), balance.getAvailable(), transaction.getAmount());
         }
 
+        Wallet platformWallet = walletService.getOrCreatePlatformWallet(
+                transaction.getOrganization(), wallet.getEnvironment());
+        Account platformAccount = accountRepository.findById(platformWallet.getAccountId())
+                .orElseThrow(() -> new NotFoundException("Account", platformWallet.getAccountId().toString()));
+
         ledgerEntryService.createBalancedEntries(
                 transaction.getId(),
-                account.getId(),
-                account.getId(),
+                customerAccount.getId(),
+                platformAccount.getId(),
                 transaction.getAmount(),
                 transaction.getOrganization().getId(),
                 "Withdrawal: " + transaction.getDescription()
         );
-
-        balanceService.debit(account.getId(), transaction.getAmount());
 
         transaction.markCompleted();
         transactionRepository.save(transaction);
@@ -93,7 +99,7 @@ public class WithdrawalEngine implements TransactionEngine {
                 .newState(Map.of(
                         "walletId", transaction.getSourceWalletId(),
                         "amount", transaction.getAmount(),
-                        "balanceAfter", balanceService.getBalance(account.getId()).getCurrent()
+                        "balanceAfter", ledgerEntryService.recalculateBalance(customerAccount.getId())
                 ))
                 .build());
 

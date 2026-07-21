@@ -62,11 +62,11 @@ class ReportingServiceTest {
                 .build();
 
         Page<Transaction> page = new PageImpl<>(List.of(tx1, tx2));
-        when(transactionRepository.findByOrganizationIdAndDateRange(
-                eq(orgId), any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
+        when(transactionRepository.findByOrganizationIdAndEnvironmentAndDateRange(
+                eq(orgId), isNull(), any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
                 .thenReturn(page);
 
-        List<DailyVolumeResponse> results = reportingService.getDailyVolume(orgId, LocalDate.now(), LocalDate.now());
+        List<DailyVolumeResponse> results = reportingService.getDailyVolume(orgId, null, LocalDate.now(), LocalDate.now());
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).transactionCount()).isEqualTo(2);
@@ -76,11 +76,11 @@ class ReportingServiceTest {
     @Test
     void should_return_empty_results_for_no_transactions() {
         Page<Transaction> emptyPage = new PageImpl<>(List.of());
-        when(transactionRepository.findByOrganizationIdAndDateRange(
-                eq(orgId), any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
+        when(transactionRepository.findByOrganizationIdAndEnvironmentAndDateRange(
+                eq(orgId), isNull(), any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
                 .thenReturn(emptyPage);
 
-        List<DailyVolumeResponse> results = reportingService.getDailyVolume(orgId, LocalDate.now(), LocalDate.now());
+        List<DailyVolumeResponse> results = reportingService.getDailyVolume(orgId, null, LocalDate.now(), LocalDate.now());
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).transactionCount()).isEqualTo(0);
@@ -89,11 +89,11 @@ class ReportingServiceTest {
 
     @Test
     void should_return_wallet_growth() {
-        when(walletRepository.countByOrganizationIdAndCreatedAtBetween(
-                eq(orgId), any(LocalDateTime.class), any(LocalDateTime.class)))
+        when(walletRepository.countByOrganizationIdAndEnvironmentAndCreatedAtBetween(
+                eq(orgId), isNull(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(3L);
 
-        List<WalletGrowthResponse> results = reportingService.getWalletGrowth(orgId, LocalDate.now(), LocalDate.now());
+        List<WalletGrowthResponse> results = reportingService.getWalletGrowth(orgId, null, LocalDate.now(), LocalDate.now());
 
         assertThat(results).hasSize(1);
         assertThat(results.get(0).walletsCreated()).isEqualTo(3);
@@ -110,11 +110,13 @@ class ReportingServiceTest {
                 .build();
 
         Page<Transaction> page = new PageImpl<>(List.of(tx));
-        when(transactionRepository.findByOrganizationIdAndType(eq(orgId), eq(Transaction.Type.DEPOSIT), any(PageRequest.class)))
+        when(transactionRepository.findByFilters(
+                eq(orgId), isNull(), eq(Transaction.Type.DEPOSIT), isNull(),
+                any(LocalDateTime.class), any(LocalDateTime.class), any(PageRequest.class)))
                 .thenReturn(page);
 
         Page<TransactionReportResponse> results = reportingService.getTransactions(
-                orgId, Transaction.Type.DEPOSIT, null, null, null, 0, 20);
+                orgId, null, Transaction.Type.DEPOSIT, null, null, null, 0, 20);
 
         assertThat(results.getContent()).hasSize(1);
         assertThat(results.getContent().get(0).type()).isEqualTo("DEPOSIT");
