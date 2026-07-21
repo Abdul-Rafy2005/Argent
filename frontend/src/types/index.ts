@@ -65,6 +65,7 @@ export interface Wallet {
   type: 'CUSTOMER' | 'MERCHANT' | 'ESCROW' | 'REWARD' | 'CREDIT' | 'PLATFORM'
   status: 'ACTIVE' | 'FROZEN' | 'CLOSED'
   metadata?: Record<string, unknown>
+  balance?: number
   createdAt: string
   updatedAt: string
 }

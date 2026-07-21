@@ -1,0 +1,80 @@
+services:
+  # ── PostgreSQL ──────────────────────────────────────────────
+  - type: postgresql
+    name: argent-postgres
+    database: argent_prod
+    plan: starter
+    ipAllowList: []
+
+  # ── Redis ──────────────────────────────────────────────────
+  - type: redis
+    name: argent-redis
+    plan: starter
+    ipAllowList: []
+    maxmemoryPolicy: allkeys-lru
+
+  # ── Backend (Spring Boot) ─────────────────────────────────
+  - type: web
+    name: argent-backend
+    runtime: image
+    image:
+      url: # Set after first deploy, or use Docker registry URL
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: starter
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: SPRING_DATASOURCE_URL
+        fromDatabase:
+          name: argent-postgres
+          property: connectionString
+      - key: SPRING_DATASOURCE_USERNAME
+        fromDatabase:
+          name: argent-postgres
+          property: user
+      - key: SPRING_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: argent-postgres
+          property: password
+      - key: SPRING_DATA_REDIS_HOST
+        fromRedis:
+          name: argent-redis
+          property: host
+      - key: SPRING_DATA_REDIS_PORT
+        fromRedis:
+          name: argent-redis
+          property: port
+      - key: SPRING_DATA_REDIS_PASSWORD
+        fromRedis:
+          name: argent-redis
+          property: password
+      - key: ARGENT_JWT_SECRET
+        generateValue: true
+      - key: ARGENT_JWT_EXPIRATION
+        value: "900000"
+      - key: ARGENT_JWT_REFRESH_EXPIRATION
+        value: "604800000"
+      - key: ARGENT_CORS_ALLOWED_ORIGINS
+        sync: false
+    dependsOn:
+      - argent-postgres
+      - argent-redis
+
+  # ── Frontend (React + Nginx) ──────────────────────────────
+  - type: web
+    name: argent-frontend
+    runtime: image
+    image:
+      url: # Set after first deploy, or use Docker registry URL
+    dockerfilePath: ./frontend/Dockerfile
+    dockerContext: ./frontend
+    plan: starter
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          name: argent-backend
+          property: host
+    dependsOn:
+      - argent-backend

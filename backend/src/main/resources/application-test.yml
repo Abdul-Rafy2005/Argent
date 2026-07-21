@@ -19,12 +19,6 @@ spring:
       host: localhost
       port: 6379
 
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: argent
-    password: devpassword
-
 argent:
   jwt:
     secret: dGVzdC1zZWNyZXQtZm9yLXRlc3Rpbmctb25seS1jaGFuZ2UtdGhpcy1pbi1wcm9kdWN0aW9u

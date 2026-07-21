@@ -34,12 +34,6 @@ spring:
       port: 6379
       timeout: 2000ms
 
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: argent
-    password: devpassword
-
 argent:
   jwt:
     secret: ZGV2LXNlY3JldC1kby1ub3QtdXNlLWluLXByb2R1Y3Rpb24tY2hhbmdlLXRoaXMtaW4tcmVhbC1kZXBsb3ltZW50

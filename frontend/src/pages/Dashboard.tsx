@@ -32,10 +32,7 @@ export default function Dashboard() {
     ? volumeData[volumeData.length - 1]?.transactionCount || 0
     : 0
     
-  // For total balance, ideally we'd have a backend endpoint. 
-  // But for V1 MVP dashboard we can leave it at 0 if no endpoint exists, 
-  // or fetch all balances and sum them up (not efficient but it works for MVP).
-  // Given the backend doesn't have a total balance endpoint, we'll leave it as a placeholder or N/A.
+  const totalBalance = walletsData?.content?.reduce((sum, w) => sum + (w.balance || 0), 0) ?? 0
 
   const columns: ColumnDef<Transaction>[] = [
     {
@@ -105,7 +102,9 @@ export default function Dashboard() {
         </Card>
         <Card>
           <p className="text-sm text-neutral-500 mb-1">Total Balance</p>
-          <p className="text-2xl font-semibold text-neutral-900 font-mono text-neutral-400">N/A</p>
+          {isWalletsLoading ? <Skeleton className="h-8 w-16" /> : (
+            <p className="text-2xl font-semibold text-neutral-900 font-mono">{formatCurrency(totalBalance)}</p>
+          )}
         </Card>
       </div>
 
