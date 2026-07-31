@@ -23,7 +23,7 @@ Build wallets, credits, rewards, transfers, refunds, and balance management — 
 
 <br />
 
-![Apex architecture](architecture_argent.png)
+![Apex Dashboard](Argent.png)
 
 </div>
 
@@ -45,6 +45,10 @@ Your App ──── REST API ──── Argent ──── Double-Entry Led
 ---
 
 ## Architecture
+
+### System Pipeline Achitecture
+
+![Apex architecture](architecture_argent.png)
 
 ### System Overview
 
