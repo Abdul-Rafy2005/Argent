@@ -23,7 +23,7 @@ Build wallets, credits, rewards, transfers, refunds, and balance management — 
 
 <br />
 
-<img src="docs/dashboard-preview.png" width="800" alt="Argent Dashboard" />
+<img src="docs/architecture.png" width="800" alt="Pipeline" />
 
 </div>
 
