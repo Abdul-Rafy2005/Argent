@@ -23,7 +23,7 @@ Build wallets, credits, rewards, transfers, refunds, and balance management — 
 
 <br />
 
-<img src="docs/architecture_argent.png" alt="Pipeline" />
+![Apex architecture](architecture_argent.png)
 
 </div>
 
